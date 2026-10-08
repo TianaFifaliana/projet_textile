@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Détail commande - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <h1>Commande <span th:text="${commande.numero}">CMD-001</span></h1>
+
+    <!-- ================= Informations générales ================= -->
+    <div class="card">
+        <h2>Informations générales</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Numéro</span>
+                <span class="info-value" th:text="${commande.numero}">CMD-001</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Client</span>
+                <span class="info-value" th:text="${commande.client != null ? commande.client.nom : '-'}">Client</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Priorité</span>
+                <span class="info-value" th:text="${commande.priorite}">NORMALE</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Date commande</span>
+                <span class="info-value" th:text="${commande.dateCommande != null ? #temporals.format(commande.dateCommande, 'dd/MM/yyyy') : '-'}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Livraison prévue</span>
+                <span class="info-value" th:text="${commande.datePrevueLivraison != null ? #temporals.format(commande.datePrevueLivraison, 'dd/MM/yyyy') : '-'}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Statut global</span>
+                <span class="info-value">
+                    <span th:text="${commande.statut}" th:classappend="'status status-' + ${commande.statut}">EN_ATTENTE</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Duree prevue</span>
+                <span class="info-value" th:text="${dureePrevue + ' jour(s)'}">0 jour(s)</span>
+            </div>
+            <div class="info-item" th:if="${retardEnJours > 0}">
+                <span class="info-label">Retard</span>
+                <span class="info-value" style="color:var(--danger);font-weight:700" th:text="${retardEnJours + ' jour(s)'}">0 jour(s)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Lignes de commande ================= -->
+    <div class="card">
+        <h2>Lignes de commande</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Quantite</th>
+                <th>Taille</th>
+                <th>Couleur</th>
+                <th>Prix unitaire</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="ligne : ${commande.lignes}">
+                <td th:text="${ligne.produit != null ? ligne.produit.nom : '-'}">Produit</td>
+                <td th:text="${ligne.quantite}">0</td>
+                <td th:text="${ligne.taille}">-</td>
+                <td th:text="${ligne.couleur}">-</td>
+                <td th:text="${#numbers.formatDecimal(ligne.prixUnitaire, 1, 2)}">0,00</td>
+            </tr>
+            <tr th:if="${commande.lignes == null || commande.lignes.isEmpty()}">
+                <td colspan="5" class="muted center">Aucune ligne.</td>
+            </tr>
+            </tbody>
+        </table>
+        <p class="muted" th:if="${quantiteCommandee > 0}"
+           th:text="'Quantité totale commandée : ' + ${quantiteCommandee}">Quantité totale commandée : 0</p>
+    </div>
+
+    <!-- ================= Workflow de production ================= -->
+    <div class="card">
+        <h2>Workflow de production</h2>
+        <p class="muted">Commande créée &rarr; Coupe &rarr; Couture &rarr; Finition &rarr; Contrôle qualité &rarr; Livraison</p>
+
+        <div class="workflow-legend">
+            <span class="etape-badge etape-EN_ATTENTE">EN_ATTENTE</span>
+            <span class="etape-badge etape-EN_COURS">EN_COURS</span>
+            <span class="etape-badge etape-TERMINEE">TERMINEE</span>
+            <span class="etape-badge etape-BLOQUE">BLOQUE</span>
+        </div>
+
+        <div class="workflow">
+            <!-- Etape 1 : Commande créée (pas de champs en base) -->
+            <div class="workflow-item workflow-terminee">
+                <div class="workflow-dot">1</div>
+                <div class="workflow-card stepper-card">
+                    <div class="workflow-titre">
+                        <h3>Commande créée</h3>
+                        <span class="etape-badge etape-TERMINEE">TERMINE</span>
+                    </div>
+                    <div class="stepper-row">
+                        <span>Numéro</span>
+                        <b th:text="${commande.numero}">CMD-001</b>
+                    </div>
+                    <div class="stepper-row">
+                        <span>Date</span>
+                        <b th:text="${commande.dateCommande != null ? #temporals.format(commande.dateCommande, 'dd/MM/yyyy') : '-'}">-</b>
+                    </div>
+                    <div class="stepper-row">
+                        <span>Client</span>
+                        <b th:text="${commande.client != null ? commande.client.nom : '-'}">-</b>
+                    </div>
+                    <div class="stepper-row">
+                        <span>Priorité</span>
+                        <b th:text="${commande.priorite}">NORMALE</b>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Etapes 2 à 6 issues de la base -->
+            <th:block th:each="etape, stat : ${etapes}">
+                <div class="workflow-item"
+                     th:classappend="${(etapeActionnable != null && etape.id == etapeActionnable.id) ? 'workflow-courante' : ((livraisonBloquee && etape.type.name() == 'LIVRAISON') ? 'workflow-bloquee' : ((etape.statut.name() != 'TERMINEE') ? 'workflow-future' : 'workflow-terminee'))}">
+                    <div class="workflow-dot" th:text="${stat.count + 1}">2</div>
+                    <div class="workflow-card stepper-card">
+                        <div class="workflow-titre">
+                            <h3 th:text="${#strings.replace(etape.type.name(), '_', ' ')}">COUPE</h3>
+                            <span class="etape-badge"
+                                  th:classappend="'etape-' + ${etape.statut}"
+                                  th:text="${etape.statut}">EN_ATTENTE</span>
+                            <span class="etape-badge etape-BLOQUE"
+                                  th:if="${livraisonBloquee && etape.type.name() == 'LIVRAISON'}">BLOQUE</span>
+                        </div>
+                        <div class="stepper-row">
+                            <span>Responsable</span>
+                            <b th:text="${etape.responsable != null ? etape.responsable : '-'}">-</b>
+                        </div>
+                        <div class="stepper-row">
+                            <span>Début</span>
+                            <b th:text="${etape.dateDebut != null ? #temporals.format(etape.dateDebut, 'dd/MM/yyyy') : '-'}">-</b>
+                        </div>
+                        <div class="stepper-row">
+                            <span>Fin prévue</span>
+                            <b th:text="${etape.dateFinPrevue != null ? #temporals.format(etape.dateFinPrevue, 'dd/MM/yyyy') : '-'}">-</b>
+                        </div>
+                        <div class="stepper-row">
+                            <span>Fin réelle</span>
+                            <b th:text="${etape.dateFinReelle != null ? #temporals.format(etape.dateFinReelle, 'dd/MM/yyyy') : '-'}">-</b>
+                        </div>
+                        <div class="stepper-row" th:if="${etape.quantiteProduite != null}">
+                            <span>Qté produite</span>
+                            <b th:text="${etape.quantiteProduite}">0</b>
+                        </div>
+                        <div class="stepper-row" th:if="${etape.resultatControle != null}">
+                            <span>Contrôle</span>
+                            <b th:text="${etape.resultatControle}">CONFORME</b>
+                        </div>
+                        <div class="stepper-comment"
+                             th:classappend="${etape.commentaire == null} ? 'muted' : ''"
+                             th:text="${etape.commentaire != null ? etape.commentaire : 'Aucun commentaire'}"
+                             th:title="${etape.commentaire}">Aucun commentaire</div>
+
+                        <p class="workflow-blocage"
+                           th:if="${livraisonBloquee && etape.type.name() == 'LIVRAISON'}">Livraison bloquée : contrôle qualité non conforme.</p>
+
+                        <a class="workflow-action"
+                           sec:authorize="hasAnyRole('OPERATOR','ADMIN')"
+                           th:if="${etapeActionnable != null && etape.id == etapeActionnable.id}"
+                           href="#etape-detail">Détail de l'étape</a>
+                    </div>
+                    <a class="workflow-lien"
+                       sec:authorize="hasAnyRole('OPERATOR','ADMIN')"
+                       th:if="${etapeActionnable != null && etape.id == etapeActionnable.id}"
+                       href="#etape-detail" aria-label="Ouvrir le détail de l'étape"></a>
+                </div>
+            </th:block>
+
+            <!-- Etapes placeholders tant que la production n'est pas démarrée -->
+            <th:block th:if="${etapes == null || etapes.isEmpty()}">
+                <div class="workflow-item workflow-future" th:each="type, stat : ${T(com.example.textile.entity.enums.TypeEtape).values()}">
+                    <div class="workflow-dot" th:text="${stat.count + 2}">2</div>
+                    <div class="workflow-card stepper-card">
+                        <div class="workflow-titre">
+                            <h3 th:text="${#strings.replace(type.name(), '_', ' ')}">COUPE</h3>
+                            <span class="etape-badge etape-EN_ATTENTE">EN_ATTENTE</span>
+                        </div>
+                        <div class="stepper-row">
+                            <span>Responsable</span>
+                            <b>-</b>
+                        </div>
+                        <div class="stepper-row">
+                            <span>Début</span>
+                            <b>-</b>
+                        </div>
+                        <div class="stepper-row">
+                            <span>Fin prévue</span>
+                            <b>-</b>
+                        </div>
+                        <div class="stepper-row">
+                            <span>Fin réelle</span>
+                            <b>-</b>
+                        </div>
+                        <div class="stepper-comment muted">Étape non démarrée.</div>
+                    </div>
+                </div>
+            </th:block>
+        </div>
+
+        <div th:if="${etapes == null || etapes.isEmpty()}" class="mt-2">
+            <p class="muted">La production n'a pas encore été démarrée pour cette commande :
+                le workflow (coupe &rarr; couture &rarr; finition &rarr; contrôle qualité &rarr; livraison)
+                sera créé au démarrage.</p>
+            <form sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+                  th:action="@{/commandes/{id}/production/start(id=${commande.id})}" method="post">
+                <button type="submit" class="btn btn-accent">Démarrer la production</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= Panneau : détail de l'étape courante ================= -->
+    <span id="fermer-etape"></span>
+    <div id="etape-detail" class="etape-modal"
+         sec:authorize="hasAnyRole('OPERATOR','ADMIN')"
+         th:if="${etapeActionnable != null}">
+        <div class="etape-modal-boite">
+            <div class="etape-modal-entete">
+                <h2>Détail de l'étape</h2>
+                <a class="etape-modal-fermer" href="#fermer-etape" aria-label="Fermer">&times;</a>
+            </div>
+            <p class="muted" th:text="'Étape : ' + ${#strings.replace(etapeActionnable.type.name(), '_', ' ')}">Étape</p>
+            <p class="muted">Enregistrer et passer à l'étape suivante : renseignez la date de fin réelle
+                et le commentaire, puis validez.</p>
+
+            <form th:action="@{/commandes/{id}/etapes/{type}(id=${commande.id}, type=${etapeActionnable.type})}"
+                  method="post">
+                <div class="etape-champ">
+                    <label for="statutEtape">Statut actuel</label>
+                    <input id="statutEtape" type="text" name="statut"
+                           th:value="${etapeActionnable.statut}" readonly="readonly">
+                </div>
+
+                <div class="etape-champ">
+                    <label for="responsable">Responsable</label>
+                    <select id="responsable" name="responsable">
+                        <option th:each="utilisateur : ${utilisateurs}"
+                                th:value="${utilisateur.username}"
+                                th:selected="${utilisateur.username == #authentication.name}"
+                                th:text="${utilisateur.username}">operator</option>
+                        <option th:if="${utilisateurs == null || utilisateurs.isEmpty()}"
+                                th:value="${#authentication.name}"
+                                th:text="${#authentication.name}">utilisateur</option>
+                    </select>
+                </div>
+
+                <div class="etape-champ">
+                    <label for="dateDebut">Date de début</label>
+                    <input id="dateDebut" type="date" name="dateDebut"
+                           th:value="${etapeActionnable.dateDebut != null ? etapeActionnable.dateDebut : aujourdHui}">
+                </div>
+
+                <div class="etape-champ">
+                    <label for="dateFinPrevue">Date de fin prévue</label>
+                    <input id="dateFinPrevue" type="date" name="dateFinPrevue"
+                           th:value="${etapeActionnable.dateFinPrevue}" readonly="readonly">
+                </div>
+
+                <!-- Contrôle qualité : formulaire dédié CONFORME / NON_CONFORME -->
+                <div class="etape-champ" th:if="${etapeActionnable.type.name() == 'CONTROLE_QUALITE'}">
+                    <label>Résultat du contrôle</label>
+                    <div class="etape-radio">
+                        <label>
+                            <input type="radio" name="resultat" value="CONFORME" required="required"
+                                   th:checked="${etapeActionnable.resultatControle != null && etapeActionnable.resultatControle.name() == 'CONFORME'}">
+                            Conforme
+                        </label>
+                        <label>
+                            <input type="radio" name="resultat" value="NON_CONFORME" required="required"
+                                   th:checked="${etapeActionnable.resultatControle != null && etapeActionnable.resultatControle.name() == 'NON_CONFORME'}">
+                            Non conforme
+                        </label>
+                    </div>
+                </div>
+
+                <div class="etape-champ" th:if="${etapeActionnable.type.name() == 'CONTROLE_QUALITE'}">
+                    <label for="quantiteControle">Quantité contrôlée</label>
+                    <input id="quantiteControle" type="number" name="quantiteProduite" min="1"
+                           th:max="${quantiteCommandee}" th:value="${etapeActionnable.quantiteProduite}">
+                </div>
+
+                <div class="etape-champ" th:unless="${etapeActionnable.type.name() == 'CONTROLE_QUALITE'}">
+                    <label for="quantiteEtape">Quantité produite</label>
+                    <input id="quantiteEtape" type="number" name="quantiteProduite" min="1"
+                           th:max="${quantiteCommandee}" th:value="${etapeActionnable.quantiteProduite}">
+                    <span class="muted" th:text="'Quantité commandée : ' + ${quantiteCommandee}">Quantité commandée : 0</span>
+                </div>
+
+                <div class="etape-champ">
+                    <label for="dateFinReelle">Date de fin réelle</label>
+                    <input id="dateFinReelle" type="date" name="dateFinReelle"
+                           th:value="${etapeActionnable.dateFinReelle != null ? etapeActionnable.dateFinReelle : aujourdHui}"
+                           required="required">
+                </div>
+
+                <div class="etape-champ">
+                    <label for="commentaire">Commentaire</label>
+                    <textarea id="commentaire" name="commentaire" rows="3" maxlength="1000"
+                              th:text="${etapeActionnable.commentaire}"></textarea>
+                </div>
+
+                <div class="etape-actions">
+                    <button type="submit" name="action" value="enregistrer" class="btn"
+                            th:if="${etapeActionnable.type.name() == 'CONTROLE_QUALITE'}">Enregistrer le contrôle</button>
+
+                    <button type="submit" name="action" value="valider" class="btn btn-accent"
+                            th:if="${etapeActionnable.type.name() == 'CONTROLE_QUALITE'}">Valider et passer à l'étape suivante</button>
+
+                    <button type="submit" class="btn btn-ok"
+                            th:if="${etapeActionnable.type.name() == 'LIVRAISON'}">Marquer comme livrée</button>
+
+                    <button type="submit" class="btn btn-accent"
+                            th:unless="${etapeActionnable.type.name() == 'CONTROLE_QUALITE' || etapeActionnable.type.name() == 'LIVRAISON'}">Valider et passer à l'étape suivante</button>
+
+                    <a href="#fermer-etape" class="btn">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= Synthèse des étapes ================= -->
+    <div class="card">
+        <h2>Étapes de production (tableau)</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Etape</th>
+                <th>Statut</th>
+                <th>Responsable</th>
+                <th>Début</th>
+                <th>Fin prévue</th>
+                <th>Fin réelle</th>
+                <th>Quantite produite</th>
+                <th>Controle qualite</th>
+                <th>Commentaire</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="etape : ${etapes}">
+                <td th:text="${etape.type}">COUPE</td>
+                <td>
+                    <span th:text="${etape.statut}" th:classappend="'status status-' + ${etape.statut}">EN_ATTENTE</span>
+                </td>
+                <td th:text="${etape.responsable != null ? etape.responsable : '-'}">-</td>
+                <td th:text="${etape.dateDebut != null ? #temporals.format(etape.dateDebut, 'dd/MM/yyyy') : '-'}">-</td>
+                <td th:text="${etape.dateFinPrevue != null ? #temporals.format(etape.dateFinPrevue, 'dd/MM/yyyy') : '-'}">-</td>
+                <td th:text="${etape.dateFinReelle != null ? #temporals.format(etape.dateFinReelle, 'dd/MM/yyyy') : '-'}">-</td>
+                <td th:text="${etape.quantiteProduite != null ? etape.quantiteProduite : '-'}">-</td>
+                <td th:text="${etape.resultatControle != null ? etape.resultatControle : '-'}">-</td>
+                <td th:text="${etape.commentaire != null ? etape.commentaire : '-'}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis">-</td>
+            </tr>
+            <tr th:if="${etapes == null || etapes.isEmpty()}">
+                <td colspan="9" class="muted center">Production non demarree.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-2" style="display:flex;gap:8px;flex-wrap:wrap">
+        <a th:href="@{/commandes}" class="btn">Retour a la liste</a>
+        <a sec:authorize="hasAnyRole('OPERATOR','MANAGER','ADMIN')"
+           th:href="@{/commandes/{id}/production(id=${commande.id})}" class="btn btn-accent">Production</a>
+        <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+           th:href="@{/commandes/{id}/qualite(id=${commande.id})}" class="btn">Controle qualite</a>
+        <a sec:authorize="hasAnyRole('MANAGER','ADMIN')"
+           th:href="@{/commandes/{id}/livraisons(id=${commande.id})}" class="btn btn-ok">Livraison</a>
+    </div>
+</div>
+</body>
+</html>

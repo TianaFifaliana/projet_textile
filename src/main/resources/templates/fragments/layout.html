@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<nav th:fragment="nav" class="menu">
+    <div class="menu-brand">AppTextile</div>
+    <ul>
+        <li><a th:href="@{/}">Accueil</a></li>
+        <li><a th:href="@{/commandes}">Commandes</a></li>
+        <li sec:authorize="hasAnyRole('MANAGER','ADMIN')">
+            <a th:href="@{/commandes/nouvelle}">Nouvelle commande</a>
+        </li>
+        <li sec:authorize="hasAnyRole('MANAGER','ADMIN')">
+            <a th:href="@{/commandes/retards}">En retard</a>
+        </li>
+        <li sec:authorize="hasAnyRole('MANAGER','ADMIN')">
+            <a th:href="@{/statistiques}">Statistiques</a>
+        </li>
+        <li sec:authorize="hasRole('ADMIN')">
+            <a th:href="@{/configuration}">Configuration</a>
+        </li>
+    </ul>
+    <div class="menu-auth">
+        <span sec:authentication="name">utilisateur</span>
+        <span class="badge" th:text="${#authentication.getAuthorities()}">ROLES</span>
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn btn-small">Deconnexion</button>
+        </form>
+    </div>
+</nav>
+</body>
+</html>

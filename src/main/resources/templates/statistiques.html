@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Statistiques - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <h1>Statistiques de production</h1>
+
+    <div class="dashboard-grid mb-2">
+        <div class="card">
+            <h2>Total commandes</h2>
+            <p style="font-size:2rem;margin:0;color:var(--accent)" th:text="${stats.totalCommandes}">0</p>
+        </div>
+        <div class="card">
+            <h2>Commandes en retard</h2>
+            <p style="font-size:2rem;margin:0;color:var(--danger)" th:text="${stats.nombreEnRetard}">0</p>
+        </div>
+        <div class="card">
+            <h2>Taux de retard</h2>
+            <p style="font-size:2rem;margin:0;color:#c0392b" th:text="#numbers.formatDecimal(stats.tauxEnRetard,1,2) + '%'">0%</p>
+        </div>
+    </div>
+
+    <div class="dashboard-grid mb-2">
+        <div class="card">
+            <h2>Commandes par statut</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>Statut</th>
+                    <th>Nombre</th>
+                    <th>Part</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="entry : ${stats.commandesParStatut}">
+                    <td>
+                        <span th:text="${entry.key}"
+                              th:classappend="'status status-' + ${entry.key}">EN_ATTENTE</span>
+                    </td>
+                    <td th:text="${entry.value}">0</td>
+                    <td th:text="${stats.totalCommandes > 0 ? #numbers.formatDecimal(entry.value * 100.0 / stats.totalCommandes, 1, 2) + '%' : '-'}">-</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Repartition par priorite</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>Priorite</th>
+                    <th>Nombre</th>
+                    <th>Part</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="entry : ${stats.commandesParPriorite}">
+                    <td th:text="${entry.key}">NORMALE</td>
+                    <td th:text="${entry.value}">0</td>
+                    <td th:text="${stats.totalCommandes > 0 ? #numbers.formatDecimal(entry.value * 100.0 / stats.totalCommandes, 1, 2) + '%' : '-'}">-</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-2">
+        <h2>Quantites produites par etape</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Etape</th>
+                <th>Quantite produite</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="entry : ${stats.quantitesParEtape}">
+                <td th:text="${entry.key}">COUPE</td>
+                <td th:text="${entry.value}">0</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Commandes en retard de livraison</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>N&deg;</th>
+                <th>Client</th>
+                <th>Livraison prevue</th>
+                <th>Statut</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${commandesEnRetard}">
+                <td th:text="${c.numero}">CMD-001</td>
+                <td th:text="${c.client != null ? c.client.nom : '-'}">Client</td>
+                <td th:text="${c.datePrevueLivraison != null ? #temporals.format(c.datePrevueLivraison, 'dd/MM/yyyy') : '-'}">-</td>
+                <td>
+                    <span th:text="${c.statut}"
+                          th:classappend="'status status-' + ${c.statut}">EN_PRODUCTION</span>
+                </td>
+            </tr>
+            <tr th:if="${commandesEnRetard == null || commandesEnRetard.isEmpty()}">
+                <td colspan="4" class="muted center">Aucune commande en retard.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

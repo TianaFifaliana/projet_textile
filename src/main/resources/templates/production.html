@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Production - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <h1>Production &mdash; Commande <span th:text="${commande.numero}">CMD-001</span></h1>
+
+    <div class="card">
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Client</span>
+                <span class="info-value" th:text="${commande.client != null ? commande.client.nom : '-'}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Quantite commandee</span>
+                <span class="info-value" th:text="${totalQuantite}">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Statut</span>
+                <span class="info-value">
+                    <span th:text="${commande.statut}" th:classappend="'status status-' + ${commande.statut}">-</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Livraison prevue</span>
+                <span class="info-value" th:text="${commande.datePrevueLivraison != null ? #temporals.format(commande.datePrevueLivraison, 'dd/MM/yyyy') : '-'}">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${etapes == null || etapes.isEmpty()}" class="card">
+        <p class="muted">La production n'a pas encore demarre pour cette commande.</p>
+        <form sec:authorize="hasAnyRole('MANAGER','ADMIN')" th:action="@{/commandes/{id}/production/start(id=${commande.id})}" method="post">
+            <button type="submit" class="btn btn-accent">Demarrer la production</button>
+        </form>
+    </div>
+
+    <div class="card" th:if="${etapes != null && !etapes.isEmpty()}">
+        <h2>Suivi des etapes</h2>
+
+        <div class="stepper mb-2">
+            <th:block th:each="etape, stat : ${etapes}">
+                <div class="stepper-step">
+                    <div class="stepper-circle" th:classappend="${etape.statut}" th:text="${stat.count}">1</div>
+                    <div class="stepper-label" th:text="${#strings.replace(etape.type.name(), '_', ' ')}">ETAPE</div>
+                    <div class="stepper-date" th:if="${etape.dateDebut != null}"
+                         th:text="${#temporals.format(etape.dateDebut, 'dd/MM/yyyy')}">01/01/2026</div>
+                    <div class="stepper-detail" th:if="${etape.quantiteProduite != null}"
+                         th:text="'Qte : ' + ${etape.quantiteProduite}">Qte : 100</div>
+                </div>
+            </th:block>
+        </div>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Etape</th>
+                <th>Statut</th>
+                <th>Quantite commandee</th>
+                <th>Quantite produite</th>
+                <th>Controle qualite</th>
+                <th>Commentaire</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="etape : ${etapes}">
+                <td th:text="${etape.type}">COUPE</td>
+                <td>
+                    <span th:text="${etape.statut}" th:classappend="'status status-' + ${etape.statut}">EN_COURS</span>
+                </td>
+                <td th:text="${totalQuantite}">0</td>
+                <td th:text="${etape.quantiteProduite != null ? etape.quantiteProduite : '-'}">-</td>
+                <td th:text="${etape.resultatControle != null ? etape.resultatControle : '-'}">-</td>
+                <td th:text="${etape.commentaire != null ? etape.commentaire : '-'}" style="max-width:150px;overflow:hidden;text-overflow:ellipsis">-</td>
+                <td>
+                    <form th:if="${etape.statut.name() == 'EN_COURS'}"
+                          sec:authorize="hasAnyRole('MANAGER','ADMIN') or (hasRole('OPERATOR') and ${etape.type in typesModifiables})"
+                          class="form-inline"
+                          th:action="@{/commandes/{id}/production/steps/{step}/complete(id=${commande.id}, step=${etape.type})}"
+                          method="post">
+                        <input type="number" name="quantiteProduite" min="0" th:max="${totalQuantite}"
+                               placeholder="Qte produite" required>
+                        <input type="text" name="commentaire" placeholder="Commentaire">
+                        <button type="submit" class="btn btn-small btn-ok">Valider</button>
+                    </form>
+                    <span th:if="${etape.statut.name() != 'EN_COURS'}" class="muted">-</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-2">
+        <a th:href="@{/commandes/{id}(id=${commande.id})}" class="btn">Retour a la commande</a>
+    </div>
+</div>
+</body>
+</html>

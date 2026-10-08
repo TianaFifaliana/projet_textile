@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Accès refusé - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+    <div class="card center">
+        <h1>Accès refusé (403)</h1>
+        <p class="muted">
+            Votre compte (<span sec:authentication="name">utilisateur</span>) ne possède pas
+            les droits nécessaires pour accéder à cette ressource.
+        </p>
+        <a th:href="@{/}" class="btn">Retour à l'accueil</a>
+    </div>
+</div>
+</body>
+</html>

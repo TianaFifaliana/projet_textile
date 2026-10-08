@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Utilisateur - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <h1 th:text="${utilisateurId != null} ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'">Utilisateur</h1>
+
+    <div class="card" style="max-width:560px">
+        <form th:action="@{utilisateurId == null ? '/configuration/utilisateurs' : '/configuration/utilisateurs/' + utilisateurId}"
+              th:object="${utilisateurForm}"
+              th:method="post">
+            <div th:if="${#fields.hasErrors('*')}" class="alert alert-error">
+                <p th:each="err : ${#fields.errors('*')}" th:text="${err}">Erreur</p>
+            </div>
+
+            <div class="info-grid mb-2" style="grid-template-columns:1fr 1fr">
+                <div class="info-item">
+                    <label class="info-label" for="username">Identifiant *</label>
+                    <input type="text" id="username" th:field="*{username}" placeholder="login" required>
+                    <span class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></span>
+                </div>
+                <div class="info-item">
+                    <label class="info-label" for="role">Rôle *</label>
+                    <select id="role" th:field="*{role}" required>
+                        <option th:each="r : ${roles}" th:value="${r}" th:text="${r}">ROLE</option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></span>
+                </div>
+                <div class="info-item">
+                    <label class="info-label" for="prenom">Prénom</label>
+                    <input type="text" id="prenom" th:field="*{prenom}" placeholder="Prénom">
+                    <span class="field-error" th:if="${#fields.hasErrors('prenom')}" th:errors="*{prenom}"></span>
+                </div>
+                <div class="info-item">
+                    <label class="info-label" for="nom">Nom</label>
+                    <input type="text" id="nom" th:field="*{nom}" placeholder="Nom">
+                    <span class="field-error" th:if="${#fields.hasErrors('nom')}" th:errors="*{nom}"></span>
+                </div>
+                <div class="info-item">
+                    <label class="info-label" for="password">
+                        Mot de passe <span th:if="${utilisateurId != null}">(laisser vide pour conserver)</span> *
+                    </label>
+                    <input type="password" id="password" th:field="*{password}" th:required="${utilisateurId == null}"
+                           placeholder="Au moins 6 caractères">
+                    <span class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+                    <span class="field-error"
+                          th:if="${utilisateurId == null and #fields.hasGlobalErrors()}">Le mot de passe est obligatoire à la création</span>
+                </div>
+                <div class="info-item" style="justify-content:flex-end">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:0.9rem">
+                        <input type="checkbox" th:field="*{actif}">
+                        Compte actif
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-2" style="display:flex;gap:8px">
+                <button type="submit" class="btn btn-ok">Enregistrer</button>
+                <a th:href="@{/configuration/utilisateurs}" class="btn">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

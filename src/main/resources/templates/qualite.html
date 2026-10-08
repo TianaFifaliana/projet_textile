@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Controle qualite - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <h1>Controle qualite &mdash; Commande <span th:text="${commande.numero}">CMD-001</span></h1>
+
+    <div class="card">
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Client</span>
+                <span class="info-value" th:text="${commande.client != null ? commande.client.nom : '-'}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Statut commande</span>
+                <span class="info-value">
+                    <span th:text="${commande.statut}" th:classappend="'status status-' + ${commande.statut}">-</span>
+                </span>
+            </div>
+            <div class="info-item" th:if="${controle != null}">
+                <span class="info-label">Statut etape CQ</span>
+                <span class="info-value">
+                    <span th:text="${controle.statut}" th:classappend="'status status-' + ${controle.statut}">-</span>
+                </span>
+            </div>
+            <div class="info-item" th:if="${controle != null && controle.resultatControle != null}">
+                <span class="info-label">Resultat actuel</span>
+                <span class="info-value" th:text="${controle.resultatControle}">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${controle == null}" class="alert alert-info">
+        La production n'a pas encore atteint l'etape de controle qualite.
+    </div>
+
+    <div class="card" th:if="${controle != null && controle.statut.name() == 'EN_COURS'}">
+        <h2>Enregistrer le resultat du controle</h2>
+        <form th:action="@{/commandes/{id}/qualite(id=${commande.id})}" method="post">
+            <div class="form-inline mb-2">
+                <select name="resultat" required>
+                    <option value="">Choisir un resultat...</option>
+                    <option th:each="r : ${resultats}" th:value="${r}" th:text="${r}">CONFORME</option>
+                </select>
+                <input type="text" name="commentaire" placeholder="Observations, defauts constates...">
+                <button type="submit" class="btn btn-ok">Enregistrer le resultat</button>
+            </div>
+        </form>
+        <p class="muted">Rappel : une commande ne peut etre livree que si le controle qualite est CONFORME.</p>
+    </div>
+
+    <div class="card" th:if="${controle != null && controle.resultatControle != null}">
+        <h2>Resume du controle</h2>
+        <table>
+            <tr>
+                <th>Resultat</th>
+                <td>
+                    <span th:text="${controle.resultatControle}"
+                          th:classappend="${controle.resultatControle.name() == 'CONFORME'} ? 'status-LIVREE' : 'status-ANNULEE'"
+                          th:style="'font-weight:700'">-</span>
+                </td>
+            </tr>
+            <tr th:if="${controle.commentaireControle != null}">
+                <th>Commentaire</th>
+                <td th:text="${controle.commentaireControle}">-</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card" th:if="${controle != null && controle.statut.name() == 'TERMINEE' && controle.resultatControle != null && controle.resultatControle.name() == 'CONFORME'}">
+        <h2>Livraison</h2>
+        <p class="muted mb-2">Le controle qualite est conforme. La livraison peut etre effectuee.</p>
+        <a th:href="@{/commandes/{id}/livraisons(id=${commande.id})}" class="btn btn-ok">Gerer la livraison</a>
+    </div>
+
+    <div class="card" th:if="${controle != null && controle.resultatControle != null && controle.resultatControle.name() == 'NON_CONFORME'}">
+        <div class="alert alert-error">
+            Le controle qualite est NON CONFORME. La livraison est bloquee tant que le resultat n'est pas corrige.
+        </div>
+    </div>
+
+    <div class="mt-2">
+        <a th:href="@{/commandes/{id}(id=${commande.id})}" class="btn">Retour a la commande</a>
+    </div>
+</div>
+</body>
+</html>

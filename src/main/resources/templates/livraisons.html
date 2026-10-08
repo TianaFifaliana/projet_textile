@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Livraisons - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <h1>Livraison &mdash; Commande <span th:text="${commande.numero}">CMD-001</span></h1>
+
+    <div class="card">
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Client</span>
+                <span class="info-value" th:text="${commande.client != null ? commande.client.nom : '-'}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Adresse</span>
+                <span class="info-value" th:text="${commande.client != null && commande.client.adresse != null ? commande.client.adresse : '-'}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Telephone</span>
+                <span class="info-value" th:text="${commande.client != null && commande.client.telephone != null ? commande.client.telephone : '-'}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Livraison prevue</span>
+                <span class="info-value" th:text="${commande.datePrevueLivraison != null ? #temporals.format(commande.datePrevueLivraison, 'dd/MM/yyyy') : '-'}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Statut commande</span>
+                <span class="info-value">
+                    <span th:text="${commande.statut}" th:classappend="'status status-' + ${commande.statut}">-</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Suivi des etapes</h2>
+        <div class="stepper mb-2">
+            <th:block th:each="etape, stat : ${etapes}">
+                <div class="stepper-step">
+                    <div class="stepper-circle" th:classappend="${etape.statut}" th:text="${stat.count}">1</div>
+                    <div class="stepper-label" th:text="${#strings.replace(etape.type.name(), '_', ' ')}">ETAPE</div>
+                    <div class="stepper-date" th:if="${etape.dateFinReelle != null}"
+                         th:text="'Terminee : ' + ${#temporals.format(etape.dateFinReelle, 'dd/MM/yyyy')}">Terminee : 01/01/2026</div>
+                </div>
+            </th:block>
+        </div>
+    </div>
+
+    <div class="card" th:if="${controleQualite != null}">
+        <h2>Controle qualite</h2>
+        <table>
+            <tr>
+                <th>Resultat</th>
+                <td>
+                    <span th:if="${controleQualite.resultatControle != null}"
+                          th:text="${controleQualite.resultatControle}"
+                          th:classappend="${controleQualite.resultatControle.name() == 'CONFORME'} ? 'status-LIVREE' : 'status-ANNULEE'"
+                          style="font-weight:700">-</span>
+                    <span th:if="${controleQualite.resultatControle == null}" class="muted">Non enregistre</span>
+                </td>
+            </tr>
+            <tr th:if="${controleQualite.commentaireControle != null}">
+                <th>Commentaire</th>
+                <td th:text="${controleQualite.commentaireControle}">-</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card" th:if="${etapeLivraison != null}">
+        <h2>Etape livraison</h2>
+        <table>
+            <tr>
+                <th>Statut</th>
+                <td>
+                    <span th:text="${etapeLivraison.statut}" th:classappend="'status status-' + ${etapeLivraison.statut}">-</span>
+                </td>
+            </tr>
+            <tr th:if="${etapeLivraison.dateFinReelle != null}">
+                <th>Date de livraison</th>
+                <td th:text="${#temporals.format(etapeLivraison.dateFinReelle, 'dd/MM/yyyy')}">-</td>
+            </tr>
+            <tr th:if="${etapeLivraison.commentaire != null}">
+                <th>Commentaire</th>
+                <td th:text="${etapeLivraison.commentaire}">-</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card" th:if="${commande.statut.name() != 'LIVREE' && commande.statut.name() != 'ANNULEE'}">
+        <h2>Effectuer la livraison</h2>
+
+        <div th:if="${controleQualite == null || controleQualite.resultatControle == null}"
+             class="alert alert-info mb-2">
+            Le controle qualite doit etre enregistre avant de pouvoir livrer.
+            <a th:href="@{/commandes/{id}/qualite(id=${commande.id})}">Aller au controle qualite</a>
+        </div>
+
+        <div th:if="${controleQualite != null && controleQualite.resultatControle != null && controleQualite.resultatControle.name() == 'NON_CONFORME'}"
+             class="alert alert-error mb-2">
+            Impossible de livrer : le controle qualite est NON CONFORME. Corriger le resultat du controle avant de livrer.
+        </div>
+
+        <div th:if="${controleQualite != null && controleQualite.resultatControle != null && controleQualite.resultatControle.name() == 'CONFORME'}">
+            <p class="muted mb-2">Toutes les conditions sont reunies. Vous pouvez proceder a la livraison.</p>
+            <form th:action="@{/commandes/{id}/livraisons(id=${commande.id})}" method="post"
+                  onsubmit="return confirm('Confirmer la livraison de cette commande ?')">
+                <div class="form-inline mb-2">
+                    <input type="text" name="commentaire" placeholder="Commentaire de livraison (optionnel)">
+                    <button type="submit" class="btn btn-ok">Confirmer la livraison</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card" th:if="${commande.statut.name() == 'LIVREE'}">
+        <div class="alert alert-ok">
+            Cette commande a ete livree.
+            <span th:if="${etapeLivraison != null && etapeLivraison.dateFinReelle != null}"
+                  th:text="' Livree le ' + ${#temporals.format(etapeLivraison.dateFinReelle, 'dd/MM/yyyy')} + '.'"></span>
+        </div>
+    </div>
+
+    <div class="mt-2">
+        <a th:href="@{/commandes/{id}(id=${commande.id})}" class="btn">Retour a la commande</a>
+    </div>
+</div>
+</body>
+</html>

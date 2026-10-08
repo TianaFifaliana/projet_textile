@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Accueil - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <h1>Tableau de bord production</h1>
+
+    <!-- 1. Cartes de synthèse -->
+    <div class="dashboard-grid mb-2">
+        <div class="card">
+            <h2>En cours</h2>
+            <p style="font-size:2rem;margin:0;color:var(--primary)" th:text="${dashboard.nombreEnCours}">0</p>
+            <a th:href="@{/commandes}" class="btn btn-small">Voir</a>
+        </div>
+        <div class="card">
+            <h2>En retard</h2>
+            <p style="font-size:2rem;margin:0;color:var(--danger)" th:text="${dashboard.nombreEnRetard}">0</p>
+            <a th:href="@{/commandes/retards}" class="btn btn-small btn-danger">Voir les retards</a>
+        </div>
+        <div class="card">
+            <h2>Termin&eacute;es</h2>
+            <p style="font-size:2rem;margin:0;color:var(--ok)" th:text="${dashboard.nombreTerminees}">0</p>
+            <a th:href="@{/commandes(status='TERMINEE')}" class="btn btn-small">Voir</a>
+        </div>
+        <div class="card">
+            <h2>Livr&eacute;es du mois</h2>
+            <p style="font-size:2rem;margin:0;color:var(--accent)" th:text="${dashboard.nombreLivreesMois}">0</p>
+            <a th:href="@{/commandes(status='LIVREE')}" class="btn btn-small">Voir</a>
+        </div>
+    </div>
+
+    <!-- 2. Commandes urgentes -->
+    <div class="card dash-urgent mb-2">
+        <h2>Commandes urgentes</h2>
+        <div th:if="${dashboard.commandesUrgentes.isEmpty()}" class="alert alert-ok">
+            Aucune commande urgente en cours.
+        </div>
+        <table th:unless="${dashboard.commandesUrgentes.isEmpty()}">
+            <thead>
+            <tr>
+                <th>N&deg;</th>
+                <th>Client</th>
+                <th>Livraison pr&eacute;vue</th>
+                <th>Priorit&eacute;</th>
+                <th>Statut</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${dashboard.commandesUrgentes}">
+                <td th:text="${c.numero}">CMD-001</td>
+                <td th:text="${c.client != null ? c.client.nom : '-'}">Client</td>
+                <td th:text="${c.datePrevueLivraison != null ? #temporals.format(c.datePrevueLivraison, 'dd/MM/yyyy') : '-'}">-</td>
+                <td>
+                    <span th:if="${c.priorite.name() == 'TRES_URGENTE'}"
+                          class="badge-priorite priorite-TRES_URGENTE">Tr&egrave;s urgente</span>
+                    <span th:if="${c.priorite.name() == 'URGENTE'}"
+                          class="badge-priorite priorite-URGENTE">Urgente</span>
+                    <span th:if="${c.priorite.name() != 'TRES_URGENTE' && c.priorite.name() != 'URGENTE'}"
+                          class="badge-priorite priorite-NORMALE" th:text="${c.priorite}">NORMALE</span>
+                </td>
+                <td>
+                    <span th:text="${c.statut}"
+                          th:classappend="'status status-' + ${c.statut}">EN_PRODUCTION</span>
+                </td>
+                <td><a class="btn btn-small btn-accent" th:href="@{/commandes/{id}(id=${c.id})}">Voir d&eacute;tail</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. Commandes en cours par étape -->
+    <h2 class="mb-2">Commandes en cours par &eacute;tape</h2>
+    <div class="dashboard-grid mb-2">
+        <div class="card" th:each="entree : ${dashboard.commandesParEtape}">
+            <h2 th:text="${entree.key}">Coupe</h2>
+            <p style="font-size:2rem;margin:0;color:var(--primary-dark)" th:text="${entree.value}">0</p>
+            <a th:href="@{/commandes(status='EN_PRODUCTION')}" class="btn btn-small">Voir</a>
+        </div>
+    </div>
+
+    <!-- 4. Alertes -->
+    <h2 class="mb-2">Alertes</h2>
+
+    <div class="card dash-alerte dash-alerte-danger mb-2">
+        <h2>Contr&ocirc;les qualit&eacute; non conformes</h2>
+        <div th:if="${dashboard.controlesNonConformes.isEmpty()}" class="alert alert-ok">
+            Aucun contr&ocirc;le non conforme &agrave; traiter.
+        </div>
+        <table th:unless="${dashboard.controlesNonConformes.isEmpty()}">
+            <thead>
+            <tr>
+                <th>N&deg;</th>
+                <th>Client</th>
+                <th>Livraison pr&eacute;vue</th>
+                <th>Commentaire du contr&ocirc;le</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="alerte : ${dashboard.controlesNonConformes}">
+                <td th:text="${alerte.commande.numero}">CMD-001</td>
+                <td th:text="${alerte.commande.client != null ? alerte.commande.client.nom : '-'}">Client</td>
+                <td th:text="${alerte.commande.datePrevueLivraison != null ? #temporals.format(alerte.commande.datePrevueLivraison, 'dd/MM/yyyy') : '-'}">-</td>
+                <td class="muted" th:text="${alerte.commentaire != null ? alerte.commentaire : '-'}">-</td>
+                <td>
+                    <a sec:authorize="hasAnyRole('MANAGER','ADMIN')" class="btn btn-small btn-danger"
+                       th:href="@{/commandes/{id}/qualite(id=${alerte.commande.id})}">Traiter</a>
+                    <a class="btn btn-small" th:href="@{/commandes/{id}(id=${alerte.commande.id})}">Voir d&eacute;tail</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card dash-alerte dash-alerte-info mb-2">
+        <h2>Livraisons imminentes</h2>
+        <div th:if="${dashboard.livraisonsProches.isEmpty()}" class="alert alert-info">
+            Aucune livraison pr&eacute;vue dans les trois prochains jours.
+        </div>
+        <table th:unless="${dashboard.livraisonsProches.isEmpty()}">
+            <thead>
+            <tr>
+                <th>N&deg;</th>
+                <th>Client</th>
+                <th>Livraison pr&eacute;vue</th>
+                <th>D&eacute;lai</th>
+                <th>Statut</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="alerte : ${dashboard.livraisonsProches}">
+                <td th:text="${alerte.commande.numero}">CMD-001</td>
+                <td th:text="${alerte.commande.client != null ? alerte.commande.client.nom : '-'}">Client</td>
+                <td th:text="${alerte.commande.datePrevueLivraison != null ? #temporals.format(alerte.commande.datePrevueLivraison, 'dd/MM/yyyy') : '-'}">-</td>
+                <td>
+                    <span th:class="'badge-delai ' + ${alerte.joursRestants &lt;= 1 ? 'delai-urgent' : 'delai-proche'}"
+                          th:text="${alerte.libelleDelai}">J-3</span>
+                </td>
+                <td>
+                    <span th:text="${alerte.commande.statut}"
+                          th:classappend="'status status-' + ${alerte.commande.statut}">EN_PRODUCTION</span>
+                </td>
+                <td><a class="btn btn-small btn-accent" th:href="@{/commandes/{id}(id=${alerte.commande.id})}">Voir d&eacute;tail</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 5. Raccourcis -->
+    <div sec:authorize="hasAnyRole('MANAGER','ADMIN')">
+        <h2 class="mb-2">Raccourcis</h2>
+        <div class="form-inline mb-2">
+            <a class="btn btn-accent" th:href="@{/commandes/nouvelle}">Nouvelle commande</a>
+            <a class="btn btn-danger" th:href="@{/commandes/retards}">Voir les retards</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

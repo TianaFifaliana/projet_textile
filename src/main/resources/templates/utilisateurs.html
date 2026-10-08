@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Utilisateurs - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <div class="toolbar">
+        <h1>Gestion des utilisateurs</h1>
+        <a class="btn btn-ok" th:href="@{/configuration/utilisateurs/nouveau}">+ Nouvel utilisateur</a>
+    </div>
+
+    <div class="card">
+        <table>
+            <thead>
+            <tr>
+                <th>Identifiant</th>
+                <th>Prénom</th>
+                <th>Nom</th>
+                <th>Rôle</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="u : ${utilisateurs}">
+                <td th:text="${u.username}">admin</td>
+                <td th:text="${u.prenom != null ? u.prenom : '-'}">-</td>
+                <td th:text="${u.nom != null ? u.nom : '-'}">-</td>
+                <td>
+                    <span class="badge" th:text="${u.role}">ADMIN</span>
+                </td>
+                <td>
+                    <span th:text="${u.actif} ? 'ACTIF' : 'DESACTIVE'"
+                          th:classappend="${u.actif} ? 'status-LIVREE' : 'status-ANNULEE'"
+                          style="font-weight:600">ACTIF</span>
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <a class="btn btn-small" th:href="@{/configuration/utilisateurs/{id}/modifier(id=${u.id})}">Modifier</a>
+                        <form th:if="${u.actif}" th:action="@{/configuration/utilisateurs/{id}/desactiver(id=${u.id})}" method="post">
+                            <button type="submit" class="btn btn-small btn-danger">Désactiver</button>
+                        </form>
+                        <form th:if="${!u.actif}" th:action="@{/configuration/utilisateurs/{id}/activer(id=${u.id})}" method="post">
+                            <button type="submit" class="btn btn-small btn-ok">Activer</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <tr th:if="${utilisateurs == null || utilisateurs.isEmpty()}">
+                <td colspan="6" class="muted center">Aucun utilisateur.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-2">
+        <a th:href="@{/configuration}" class="btn">Retour à la configuration</a>
+    </div>
+</div>
+</body>
+</html>

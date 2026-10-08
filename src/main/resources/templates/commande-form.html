@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouvelle commande - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <h1>Nouvelle commande</h1>
+
+    <form th:action="@{/commandes}" th:object="${commandeForm}" method="post">
+
+        <div class="card">
+            <h2>Informations générales</h2>
+            <div class="form-inline">
+                <label>Numéro :
+                    <input type="text" th:field="*{numero}" placeholder="CMD-2026-001">
+                    <span class="field-error" th:errors="*{numero}"></span>
+                </label>
+                <label>Client :
+                    <select th:field="*{clientId}">
+                        <option value="">-- Choisir un client --</option>
+                        <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.nom}">Client</option>
+                    </select>
+                    <span class="field-error" th:errors="*{clientId}"></span>
+                </label>
+                <label>Date de commande :
+                    <input type="date" th:field="*{dateCommande}">
+                </label>
+                <label>Livraison prévue :
+                    <input type="date" th:field="*{datePrevueLivraison}">
+                </label>
+                <label>Priorité :
+                    <select th:field="*{priorite}">
+                        <option th:each="p : ${priorities}" th:value="${p}" th:text="${p}">PRIORITE</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Lignes de commande</h2>
+            <div class="alert alert-info">
+                Une ligne correspond à un produit avec sa quantité, sa taille et sa couleur.
+            </div>
+            <table>
+                <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                    <th>Taille</th>
+                    <th>Couleur</th>
+                    <th>Prix unitaire</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody id="lignes">
+                <tr class="ligne-row" th:each="ligne, i : ${commandeForm.lignes}"
+                    th:data-index="${i.index}">
+                    <td>
+                        <select th:field="*{lignes[__${i.index}__].produitId}">
+                            <option value="">--</option>
+                            <option th:each="p : ${produits}" th:value="${p.id}"
+                                    th:text="${p.reference + ' - ' + p.nom}">Produit</option>
+                        </select>
+                        <span class="field-error" th:errors="*{lignes[__${i.index}__].produitId}"></span>
+                    </td>
+                    <td>
+                        <input type="number" min="1" step="1" th:field="*{lignes[__${i.index}__].quantite}">
+                        <span class="field-error" th:errors="*{lignes[__${i.index}__].quantite}"></span>
+                    </td>
+                    <td>
+                        <input type="text" th:field="*{lignes[__${i.index}__].taille}" placeholder="M">
+                    </td>
+                    <td>
+                        <input type="text" th:field="*{lignes[__${i.index}__].couleur}" placeholder="Bleu">
+                    </td>
+                    <td>
+                        <input type="number" min="0.01" step="0.01" th:field="*{lignes[__${i.index}__].prixUnitaire}">
+                        <span class="field-error" th:errors="*{lignes[__${i.index}__].prixUnitaire}"></span>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-small btn-danger" onclick="retirerLigne(this)">Retirer</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-accent" onclick="ajouterLigne()">+ Ajouter une ligne</button>
+        </div>
+
+        <div class="form-inline">
+            <a th:href="@{/commandes}" class="btn btn-small">Annuler</a>
+            <button type="submit" class="btn btn-ok">Enregistrer la commande</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function ajouterLigne() {
+        const rows = document.querySelectorAll('#lignes .ligne-row');
+        const lastRow = rows[rows.length - 1];
+        if (!lastRow) return;
+        const newIndex = rows.length;
+        const clone = lastRow.cloneNode(true);
+
+        clone.querySelectorAll('input, select').forEach(function (el) {
+            if (el.name) {
+                el.name = el.name.replace(/lignes\[\d+\]/, 'lignes[' + newIndex + ']');
+            }
+            if (el.id) {
+                el.id = el.id.replace(/\d+$/, newIndex);
+            }
+            if (el.tagName === 'SELECT') {
+                el.selectedIndex = 0;
+            } else {
+                el.value = '';
+            }
+        });
+
+        clone.querySelectorAll('.field-error').forEach(function (el) {
+            el.remove();
+        });
+
+        clone.setAttribute('data-index', newIndex);
+        lastRow.after(clone);
+    }
+
+    function retirerLigne(btn) {
+        const rows = document.querySelectorAll('.ligne-row');
+        if (rows.length <= 1) return;
+        btn.closest('.ligne-row').remove();
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Commandes - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}">erreur</div>
+    <div th:if="${successMessage}" class="alert alert-ok" th:text="${successMessage}">succes</div>
+
+    <div class="toolbar">
+        <h1>Commandes <span class="muted" th:if="${totalElements != null}" th:text="'(' + ${totalElements} + ')'"></span></h1>
+        <a sec:authorize="hasAnyRole('MANAGER','ADMIN')" class="btn btn-ok"
+           th:href="@{/commandes/nouvelle}">+ Nouvelle commande</a>
+    </div>
+
+    <form class="filter-bar" th:action="@{/commandes}" method="get">
+        <input type="text" name="search" th:value="${currentSearch}" placeholder="Rechercher numero / client...">
+        <select name="status">
+            <option value="">Tous les statuts</option>
+            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}"
+                    th:selected="${currentStatus != null && currentStatus == s}">STATUT</option>
+        </select>
+        <select name="priority">
+            <option value="">Toutes les priorites</option>
+            <option th:each="p : ${priorities}" th:value="${p}" th:text="${p}"
+                    th:selected="${currentPriority != null && currentPriority == p}">PRIORITE</option>
+        </select>
+        <input type="hidden" name="sort" th:value="${sortField} + ',' + ${sortDir}">
+        <input type="hidden" name="page" value="0">
+        <button type="submit" class="btn btn-small">Filtrer</button>
+        <a th:href="@{/commandes}" class="btn btn-small btn-accent">Reinitialiser</a>
+    </form>
+
+    <div class="card">
+        <table>
+            <thead>
+            <tr>
+                <th><a th:href="@{/commandes(sort='numero,asc', search=${currentSearch}, status=${currentStatus}, priority=${currentPriority})}">N&deg;</a></th>
+                <th>Client</th>
+                <th><a th:href="@{/commandes(sort='dateCommande,asc', search=${currentSearch}, status=${currentStatus}, priority=${currentPriority})}">Date commande</a></th>
+                <th><a th:href="@{/commandes(sort='datePrevueLivraison,asc', search=${currentSearch}, status=${currentStatus}, priority=${currentPriority})}">Livraison prevue</a></th>
+                <th><a th:href="@{/commandes(sort='priorite,asc', search=${currentSearch}, status=${currentStatus}, priority=${currentPriority})}">Priorite</a></th>
+                <th><a th:href="@{/commandes(sort='statut,asc', search=${currentSearch}, status=${currentStatus}, priority=${currentPriority})}">Statut</a></th>
+                <th>Avancement</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${commandes}">
+                <td th:text="${c.numero}">CMD-001</td>
+                <td th:text="${c.client != null ? c.client.nom : '-'}">Client</td>
+                <td th:text="${c.dateCommande != null ? #temporals.format(c.dateCommande, 'dd/MM/yyyy') : '-'}">01/01/2026</td>
+                <td th:text="${c.datePrevueLivraison != null ? #temporals.format(c.datePrevueLivraison, 'dd/MM/yyyy') : '-'}">15/01/2026</td>
+                <td>
+                    <span th:text="${c.priorite}"
+                          th:style="${c.priorite.name() == 'TRES_URGENTE'} ? 'color:#c0392b;font-weight:700' : ''">NORMALE</span>
+                </td>
+                <td>
+                    <span th:text="${c.statut}"
+                          th:classappend="'status status-' + ${c.statut}">EN_ATTENTE</span>
+                </td>
+                <td th:with="total=${c.etapes != null ? #lists.size(c.etapes) : 0}, terminees=${c.etapes != null ? c.etapes.?[statut.name() == 'TERMINEE'].size() : 0}">
+                    <div class="avancement" th:if="${total > 0}">
+                        <div class="avancement-track">
+                            <div class="avancement-fill" th:style="'width:' + ${terminees * 100 / total} + '%'"></div>
+                        </div>
+                        <span class="avancement-label" th:text="${terminees} + '/' + ${total}">0/5</span>
+                    </div>
+                    <span class="muted" th:if="${total == 0}">-</span>
+                </td>
+                <td><a class="btn btn-small btn-accent" th:href="@{/commandes/{id}(id=${c.id})}">Voir d&eacute;tail</a></td>
+            </tr>
+            <tr th:if="${commandes == null || commandes.isEmpty()}">
+                <td colspan="8" class="muted center">Aucune commande correspondante.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination" th:if="${totalPages != null && totalPages > 1}">
+        <a th:href="@{/commandes(page=${currentPage > 0 ? currentPage - 1 : 0}, size=${pageSize}, sort=${sortField} + ',' + ${sortDir}, search=${currentSearch}, status=${currentStatus}, priority=${currentPriority})}"
+           th:classappend="${currentPage == 0} ? 'disabled' : ''">&laquo; Precedent</a>
+
+        <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+            <a th:href="@{/commandes(page=${i}, size=${pageSize}, sort=${sortField} + ',' + ${sortDir}, search=${currentSearch}, status=${currentStatus}, priority=${currentPriority})}"
+               th:classappend="${i == currentPage} ? 'active' : ''"
+               th:text="${i + 1}">1</a>
+        </th:block>
+
+        <a th:href="@{/commandes(page=${currentPage < totalPages - 1 ? currentPage + 1 : currentPage}, size=${pageSize}, sort=${sortField} + ',' + ${sortDir}, search=${currentSearch}, status=${currentStatus}, priority=${currentPriority})}"
+           th:classappend="${currentPage >= totalPages - 1} ? 'disabled' : ''">Suivant &raquo;</a>
+    </div>
+</div>
+</body>
+</html>

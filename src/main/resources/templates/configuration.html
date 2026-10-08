@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuration - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: nav}"></nav>
+<div class="container">
+    <h1>Configuration</h1>
+    <div class="alert alert-info">
+        Accès réservé aux administrateurs : gestion des produits et des clients.
+    </div>
+
+    <div class="card">
+        <h2>Produits</h2>
+        <table>
+            <thead>
+            <tr><th>Référence</th><th>Nom</th><th>Description</th><th>Prix de base</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${produits}">
+                <td th:text="${p.reference}">REF-001</td>
+                <td th:text="${p.nom}">Produit</td>
+                <td th:text="${p.description}">-</td>
+                <td th:text="${p.prixBase}">0,00</td>
+            </tr>
+            <tr th:if="${produits == null || produits.isEmpty()}">
+                <td colspan="4" class="muted center">Aucun produit.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Clients</h2>
+        <table>
+            <thead>
+            <tr><th>Nom</th><th>Adresse</th><th>Téléphone</th><th>Email</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="cl : ${clients}">
+                <td th:text="${cl.nom}">Client</td>
+                <td th:text="${cl.adresse}">-</td>
+                <td th:text="${cl.telephone}">-</td>
+                <td th:text="${cl.email}">-</td>
+            </tr>
+            <tr th:if="${clients == null || clients.isEmpty()}">
+                <td colspan="4" class="muted center">Aucun client.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
