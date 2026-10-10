@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Connexion - AppTextile</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="login-page">
+<div class="login-split">
+    <div class="login-visual">
+        <img th:src="@{/img/background_login.png}" alt="" class="login-visual-img">
+        <div class="login-visual-overlay">
+            <h2 class="login-visual-title">Fifa Fashion</h2>
+            <p class="login-visual-text">Suivez vos commandes, de la coupe à la livraison.</p>
+        </div>
+    </div>
+
+    <div class="login-panel">
+        <div class="login-box">
+            <h1>Fifa Fashion</h1>
+            <p class="muted center">Veuillez vous authentifier</p>
+
+            <div th:if="${param.error}" class="alert alert-error mb-2">
+                Identifiants invalides ou compte désactivé.
+            </div>
+            <div th:if="${param.logout}" class="alert alert-ok mb-2">
+                Vous avez été déconnecté.
+            </div>
+
+            <form th:action="@{/login}" method="post">
+                <label>Utilisateur
+                    <input type="text" name="username" autofocus required>
+                </label>
+                <label>Mot de passe
+                    <input type="password" name="password" required>
+                </label>
+                <button type="submit" class="btn">Se connecter</button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
